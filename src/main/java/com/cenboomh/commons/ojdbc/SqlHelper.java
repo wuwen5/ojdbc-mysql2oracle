@@ -41,7 +41,7 @@ public class SqlHelper {
     static {
         mapping.put("SELECT @@READ_ONLY", "SELECT 0 FROM DUAL");
 
-        //TODO 配置特殊替换规则 (nacos 空值eq操作, TENANT_ID = ?)
+        //TODO 配置特殊替换规则,放到配置文件中 (nacos 空值eq操作, TENANT_ID = ?)
         String reg = "(TENANT_ID[ ]?[=][ ]?[?])";
         sqlReplace.put(Pattern.compile(reg), "nvl(TENANT_ID, '!null!') = nvl(?, '!null!')");
     }
@@ -179,7 +179,7 @@ public class SqlHelper {
                 LOCAL_LIMIT.set(new Page().setStartRowIndex(offset.getIndex())
                         .setEndRowIndex(rowCount.getIndex()));
             } else {
-                //TODO...
+                log.log(Level.WARNING, "暂不支持的分页语法. [" + limit.toString() + "]");
                 return false;
             }
 
@@ -189,7 +189,7 @@ public class SqlHelper {
                 setSelectBody.accept(newSelect.getSelectBody());
                 return true;
             } catch (JSQLParserException e) {
-                e.printStackTrace();
+                log.log(Level.WARNING, "分页sql解析异常. [" + newSql + "]", e);
                 return false;
             }
         }
