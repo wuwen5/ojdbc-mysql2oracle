@@ -19,10 +19,12 @@ import net.sf.jsqlparser.statement.select.SubSelect;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -42,8 +44,11 @@ public class SqlHelper {
         mapping.put("SELECT @@READ_ONLY", "SELECT 0 FROM DUAL");
 
         //TODO 配置特殊替换规则,放到配置文件中 (nacos 空值eq操作, TENANT_ID = ?)
-        String reg = "(TENANT_ID[ ]?[=][ ]?[?])";
+        String reg = "((?i)TENANT_ID[ ]?[=][ ]?[?])";
         sqlReplace.put(Pattern.compile(reg), "nvl(TENANT_ID, '!null!') = nvl(?, '!null!')");
+
+        sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?!=[ ]?[?])"), "nvl(TENANT_ID, '!null!') != nvl(?, '!null!')");
+        sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?like[ ]?[?])"), "nvl(TENANT_ID, '!null!') like nvl(?, '!null!')");
     }
 
     /**
@@ -79,13 +84,14 @@ public class SqlHelper {
 
                 StringBuilder sb = new StringBuilder(sql);
 
-                String replaceSql = sqlReplace.entrySet().stream()
-                        .map(e -> e.getKey().matcher(sb.toString().toUpperCase()).replaceAll(e.getValue()))
-                        .peek(s -> sb.replace(0, sb.length(), s))
+                sqlReplace.entrySet().stream()
+                        .map(e -> matcherReplace(e, sb.toString()))
+                        .filter(Optional::isPresent)
                         .peek(s -> needModify.set(true))
-                        .findAny().orElse(sql);
+                        .map(Optional::get)
+                        .forEach(s -> sb.replace(0, sb.length(), s));
 
-                Statement parse = CCJSqlParserUtil.parse(replaceSql);
+                Statement parse = CCJSqlParserUtil.parse(sb.toString());
 
                 parse.accept(new StatementVisitorAdapter() {
                     @Override
@@ -151,6 +157,15 @@ public class SqlHelper {
             }
         }
         return newSql;
+    }
+
+    private static Optional<String> matcherReplace(Map.Entry<Pattern, String> entry, String sql) {
+        Matcher matcher = entry.getKey().matcher(sql);
+        if (matcher.find()) {
+            String s = matcher.replaceAll(entry.getValue());
+            return Optional.of(s);
+        }
+        return Optional.empty();
     }
 
     /**

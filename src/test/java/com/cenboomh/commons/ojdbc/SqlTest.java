@@ -196,6 +196,21 @@ public class SqlTest {
 
         //TODO.. mysql中的 空值条件 查询, 如: tenant_id = ?
         Assertions.assertTrue(!result3.isEmpty());
+
+        result3 = jdbcTemplate.queryForList("select * from config_info where data_id='test-dataId-9999' " +
+                " and tenant_id like ?", "");
+
+        Assertions.assertTrue(!result3.isEmpty());
+
+
+        result3 = jdbcTemplate.queryForList("select * from config_info where data_id='test-dataId-9999' " +
+                " and tenant_id like ? and tenant_id = ?", "", "");
+
+        Assertions.assertTrue(!result3.isEmpty());
+        result3 = jdbcTemplate.queryForList("select * from config_info where data_id='test-dataId-9999' " +
+                " and tenant_id != ?", "");
+
+        Assertions.assertTrue(result3.isEmpty());
     }
 
 }
