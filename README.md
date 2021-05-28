@@ -1,16 +1,13 @@
 ## mysql to oracle
 
-主要为适应nacos部署在oracle而开发
+目前主要为适应nacos部署在oracle而开发
 
 # 功能
   mysql到oracle语法转换, 支持部分mysql语法转换.
   在 nacos-1.4.x 中已测试.
   
 #### 驱动类配置
-  驱动支持可配置的项目，配置驱动类
-  ```
-  spring.datasource.driver-class-name=com.cenboomh.commons.ojdbc.driver.MysqlToOracleDriver
-  ```
+
   
 #### `Java`的启动参数配置  
   如驱动类无法指定，可通过javaagent配置, 默认替换的mysql驱动为```com.mysql.cj.jdbc.Driver```
