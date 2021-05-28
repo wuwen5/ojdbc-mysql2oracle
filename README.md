@@ -36,7 +36,9 @@
 - ```insert into ... returning  primarykey```  新增数据返回主键
  <br> 例如: ```JdbcTemplate```中的```int update(PreparedStatementCreator psc, KeyHolder generatedKeyHolder)```
  <br> Mybatis中的  ```<insert id="save" parameterType="com.xxl.job.admin.core.model.XxlJobGroup" useGeneratedKeys="true" keyProperty="id" >``` 
-  > oracle 11使用触发器+序列做自增长id
+  
+    > oracle 11使用触发器+序列做自增长id
+
 - ```delete from xxtable where ... limit ? ```
 - ```limit``` 分页语句
 - ```空值相等条件``` TODO:目前只支持在nacos中的 TENANT_ID = ?
