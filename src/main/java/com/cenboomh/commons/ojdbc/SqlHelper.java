@@ -1,7 +1,10 @@
 package com.cenboomh.commons.ojdbc;
 
+import com.cenboomh.commons.ojdbc.function.BaseFunction;
+import com.cenboomh.commons.ojdbc.function.DateAddFunction;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.JdbcParameter;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.NotExpression;
@@ -55,6 +58,9 @@ public class SqlHelper {
 
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?!=[ ]?[?])"), "nvl(TENANT_ID, '!null!') != nvl(?, '!null!')");
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?like[ ]?[?])"), "nvl(TENANT_ID, '!null!') like nvl(?, '!null!')");
+
+        //初始化函数处理
+        DateAddFunction.init();
     }
 
     /**
@@ -163,6 +169,14 @@ public class SqlHelper {
                         //非等条件,不使用感叹号.
                         if (notExpr.isExclamationMark()) {
                             notExpr.setExclamationMark(false);
+                            needModify.set(true);
+                        }
+                    }
+
+                    @Override
+                    public void visit(Function function) {
+                        super.visit(function);
+                        if (BaseFunction.process(function)) {
                             needModify.set(true);
                         }
                     }

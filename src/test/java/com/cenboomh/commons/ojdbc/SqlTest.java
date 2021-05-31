@@ -68,7 +68,7 @@ public class SqlTest {
 
     /**
      * 反引号
-     * */
+     */
     @Test
     void testWithBackquote() {
         String sql = " SELECT 1 from `dual`";
@@ -274,6 +274,15 @@ public class SqlTest {
                 " and tenant_id != ?", "");
 
         Assertions.assertTrue(result3.isEmpty());
+    }
+
+    @Test
+    void testDateAddFun() {
+        String sql = "select 1 from dual where DATE_ADD(?, INTERVAL -? SECOND) < ?";
+
+
+        jdbcTemplate.queryForList(sql, Integer.class, Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)),
+                1, Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)));
     }
 
 }

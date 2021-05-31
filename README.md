@@ -45,4 +45,5 @@
 - ```select 1 from dual as tableA``` from项别名使用as,oracle中去除as
 - ```where !(...)``` -> ```where not(...)```
 - ``` select 1 from `dual` ``` -> ``` select 1 from dual ``` 删除表名\列名中的反引号
+- ```DATE_ADD(?, INTERVAL -? SECOND)```
 
