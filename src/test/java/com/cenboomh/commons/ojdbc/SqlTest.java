@@ -44,6 +44,29 @@ public class SqlTest {
     }
 
     @Test
+    void testNotExpressionNotUseExclamationMark() {
+        String sql = " SELECT 1 from dual where !(1=2) and 1=1 and 2=2";
+
+        jdbcTemplate.queryForObject(sql, Integer.class);
+
+        sql = " SELECT 1 from dual where !(1=2) and (1=1 and 2=2)";
+
+        jdbcTemplate.queryForObject(sql, Integer.class);
+
+        sql = " SELECT 1 from dual where 1=1 and 2=2 and !(1=2)";
+
+        jdbcTemplate.queryForObject(sql, Integer.class);
+
+        sql = " SELECT 1 from dual where 1=1 or 2=2 or !(1=2)";
+
+        jdbcTemplate.queryForObject(sql, Integer.class);
+
+        sql = " SELECT 1 from dual where not(1=2)";
+
+        jdbcTemplate.queryForObject(sql, Integer.class);
+    }
+
+    @Test
     void testNormalInsert() {
         jdbcTemplate.update("INSERT INTO config_tags_relation(id,tag_name,tag_type,data_id,group_id,tenant_id) VALUES(?,?,?,?,?,?)",
                 99999, "ut-test-001", 1, "ut-test-001", "group", "namespace");

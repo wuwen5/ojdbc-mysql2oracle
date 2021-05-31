@@ -2,8 +2,10 @@ package com.cenboomh.commons.ojdbc;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
 import net.sf.jsqlparser.expression.JdbcParameter;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.NotExpression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
@@ -111,6 +113,10 @@ public class SqlHelper {
                                     needModify.set(true);
                                 }
 
+                                if (notExpressionNotUseExclamationMark(plainSelect)) {
+                                    needModify.set(true);
+                                }
+
                                 if (replacePageSql(plainSelect, select::setSelectBody)) {
                                     needModify.set(true);
                                 }
@@ -174,7 +180,7 @@ public class SqlHelper {
 
     /**
      * FromItemm中存在别名时不使用as
-     * */
+     */
     private static boolean tableAliasNotUseAs(PlainSelect plainSelect) {
 
         FromItem fromItem = plainSelect.getFromItem();
@@ -206,6 +212,45 @@ public class SqlHelper {
 
             return false;
         }
+    }
+
+    /**
+     * 非等条件,不使用感叹号.
+     * where !(1=1) -> where not (1=1)
+     */
+    private static boolean notExpressionNotUseExclamationMark(PlainSelect plainSelect) {
+
+        Expression where = plainSelect.getWhere();
+        FromItem fromItem = plainSelect.getFromItem();
+
+        AtomicBoolean update = new AtomicBoolean(false);
+
+        //子查询
+        if (fromItem instanceof SubSelect) {
+            SubSelect subSelect = (SubSelect) fromItem;
+
+            SelectBody selectBody = subSelect.getSelectBody();
+
+            if (selectBody instanceof PlainSelect) {
+                update.set(notExpressionNotUseExclamationMark((PlainSelect) selectBody));
+            }
+        }
+
+        if (where != null) {
+            where.accept(new ExpressionVisitorAdapter() {
+
+                @Override
+                public void visit(NotExpression notExpr) {
+
+                    if (notExpr.isExclamationMark()) {
+                        notExpr.setExclamationMark(false);
+                        update.set(true);
+                    }
+                }
+            });
+        }
+
+        return update.get();
     }
 
     /**

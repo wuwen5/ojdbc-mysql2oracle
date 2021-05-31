@@ -43,4 +43,5 @@
 - ```limit``` 分页语句
 - ```空值相等条件``` TODO:目前只支持在nacos中的 TENANT_ID = ?
 - ```select 1 from dual as tableA``` from项别名使用as,oracle中去除as
+- ```where !(...)``` -> ```where not(...)```
 
