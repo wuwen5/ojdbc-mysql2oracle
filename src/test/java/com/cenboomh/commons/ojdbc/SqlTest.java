@@ -66,17 +66,29 @@ public class SqlTest {
         jdbcTemplate.queryForObject(sql, Integer.class);
     }
 
+    /**
+     * 反引号
+     * */
     @Test
-    void testSymbol() {
+    void testWithBackquote() {
         String sql = " SELECT 1 from `dual`";
 
         jdbcTemplate.queryForObject(sql, Integer.class);
 
-        sql = " SELECT '`' from `dual`";
+        sql = " SELECT '`' from `dual` where `dummy` = 'xx' or 1 = 1";
 
         String s = jdbcTemplate.queryForObject(sql, String.class);
 
         Assertions.assertEquals("`", s);
+
+
+        jdbcTemplate.update("INSERT INTO `config_tags_relation`(`id`,`tag_name`,`tag_type`,`data_id`,`group_id`,`tenant_id`) VALUES(?,?,?,?,?,?)",
+                99999, "ut-test-001", 1, "ut-test-001", "group", "namespace");
+
+        sql = "update `config_tags_relation` set `tag_name` = '1' where `id` =  99999";
+
+        jdbcTemplate.update(sql);
+
     }
 
     @Test

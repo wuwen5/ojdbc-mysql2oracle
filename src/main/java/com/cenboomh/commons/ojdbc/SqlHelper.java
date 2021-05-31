@@ -2,15 +2,16 @@ package com.cenboomh.commons.ojdbc;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
 import net.sf.jsqlparser.expression.JdbcParameter;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.NotExpression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.StatementVisitorAdapter;
 import net.sf.jsqlparser.statement.delete.Delete;
+import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -18,9 +19,11 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectVisitorAdapter;
 import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.util.TablesNamesFinder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,7 +55,6 @@ public class SqlHelper {
 
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?!=[ ]?[?])"), "nvl(TENANT_ID, '!null!') != nvl(?, '!null!')");
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?like[ ]?[?])"), "nvl(TENANT_ID, '!null!') like nvl(?, '!null!')");
-
     }
 
     /**
@@ -98,12 +100,78 @@ public class SqlHelper {
                 Statement parse = CCJSqlParserUtil.parse(sb.toString());
 
                 parse.accept(new TablesNamesFinder() {
+
+                    @Override
+                    public void visit(PlainSelect plainSelect) {
+
+                        super.visit(plainSelect);
+
+                        //select 1 -> select 1 from dual
+                        if (plainSelect.getFromItem() == null) {
+                            plainSelect.setFromItem(new Table("dual"));
+                            needModify.set(true);
+                        }
+                    }
+
                     @Override
                     public void visit(Table tableName) {
+
                         if (tableName.getName() != null && tableName.getName().contains("`")) {
                             tableName.setName(tableName.getName().replaceAll("`", ""));
                             needModify.set(true);
                         }
+
+                        if (tableName.getAlias() != null && tableName.getAlias().isUseAs()) {
+                            tableName.getAlias().setUseAs(false);
+                            needModify.set(true);
+                        }
+                    }
+
+                    @Override
+                    public void visit(SubSelect subSelect) {
+                        super.visit(subSelect);
+
+                        if (subSelect.getAlias() != null && subSelect.getAlias().isUseAs()) {
+                            subSelect.getAlias().setUseAs(false);
+                            needModify.set(true);
+                        }
+                    }
+
+                    @Override
+                    public void visit(Column tableColumn) {
+                        if (tableColumn.getColumnName().contains("`")) {
+                            tableColumn.setColumnName(tableColumn.getColumnName().replaceAll("`", ""));
+                            needModify.set(true);
+                        }
+                    }
+
+                    @Override
+                    public void visit(Insert insert) {
+                        super.visit(insert);
+                        columnsProcess(insert.getColumns());
+
+                    }
+
+                    @Override
+                    public void visit(Update update) {
+                        super.visit(update);
+                        columnsProcess(update.getColumns());
+                    }
+
+                    @Override
+                    public void visit(NotExpression notExpr) {
+                        //非等条件,不使用感叹号.
+                        if (notExpr.isExclamationMark()) {
+                            notExpr.setExclamationMark(false);
+                            needModify.set(true);
+                        }
+                    }
+
+                    private void columnsProcess(List<Column> columns) {
+                        columns.stream()
+                                .filter(c -> c.getColumnName().contains("`"))
+                                .peek(c -> needModify.set(true))
+                                .forEach(c -> c.setColumnName(c.getColumnName().replaceAll("`", "")));
                     }
                 });
 
@@ -115,19 +183,6 @@ public class SqlHelper {
                         selectBody.accept(new SelectVisitorAdapter() {
                             @Override
                             public void visit(PlainSelect plainSelect) {
-                                //select 1 -> select 1 from dual
-                                if (plainSelect.getFromItem() == null) {
-                                    plainSelect.setFromItem(new Table("dual"));
-                                    needModify.set(true);
-                                }
-
-                                if (tableAliasNotUseAs(plainSelect)) {
-                                    needModify.set(true);
-                                }
-
-                                if (notExpressionNotUseExclamationMark(plainSelect)) {
-                                    needModify.set(true);
-                                }
 
                                 if (replacePageSql(plainSelect, select::setSelectBody)) {
                                     needModify.set(true);
@@ -188,81 +243,6 @@ public class SqlHelper {
             return Optional.of(s);
         }
         return Optional.empty();
-    }
-
-    /**
-     * FromItemm中存在别名时不使用as
-     */
-    private static boolean tableAliasNotUseAs(PlainSelect plainSelect) {
-
-        FromItem fromItem = plainSelect.getFromItem();
-
-        //子查询
-        if (fromItem instanceof SubSelect) {
-            SubSelect subSelect = (SubSelect) fromItem;
-
-            SelectBody selectBody = subSelect.getSelectBody();
-
-            boolean update = false;
-
-            if (selectBody instanceof PlainSelect) {
-                update = tableAliasNotUseAs((PlainSelect) selectBody);
-            }
-
-            if (fromItem.getAlias() != null && fromItem.getAlias().isUseAs()) {
-                fromItem.getAlias().setUseAs(false);
-                update = true;
-            }
-
-            return update;
-        } else {
-
-            if (fromItem.getAlias() != null && fromItem.getAlias().isUseAs()) {
-                fromItem.getAlias().setUseAs(false);
-                return true;
-            }
-
-            return false;
-        }
-    }
-
-    /**
-     * 非等条件,不使用感叹号.
-     * where !(1=1) -> where not (1=1)
-     */
-    private static boolean notExpressionNotUseExclamationMark(PlainSelect plainSelect) {
-
-        Expression where = plainSelect.getWhere();
-        FromItem fromItem = plainSelect.getFromItem();
-
-        AtomicBoolean update = new AtomicBoolean(false);
-
-        //子查询
-        if (fromItem instanceof SubSelect) {
-            SubSelect subSelect = (SubSelect) fromItem;
-
-            SelectBody selectBody = subSelect.getSelectBody();
-
-            if (selectBody instanceof PlainSelect) {
-                update.set(notExpressionNotUseExclamationMark((PlainSelect) selectBody));
-            }
-        }
-
-        if (where != null) {
-            where.accept(new ExpressionVisitorAdapter() {
-
-                @Override
-                public void visit(NotExpression notExpr) {
-
-                    if (notExpr.isExclamationMark()) {
-                        notExpr.setExclamationMark(false);
-                        update.set(true);
-                    }
-                }
-            });
-        }
-
-        return update.get();
     }
 
     /**
