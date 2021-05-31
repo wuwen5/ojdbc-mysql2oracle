@@ -82,6 +82,21 @@ public class SqlTest {
                 + "( SELECT id FROM config_info ORDER BY id LIMIT ?,?  ) g, config_info t WHERE g.id = t.id";
 
         jdbcTemplate.queryForList(sqlFetchRows, 0, 10);
+
+        //limit 单参数
+        sqlFetchRows = " SELECT id FROM config_info as tablaA LIMIT ?";
+        jdbcTemplate.queryForList(sqlFetchRows, 10);
+    }
+
+    /**
+     * from table 使用as别名时
+     */
+    @Test
+    void testFromWithAliasUseAs() {
+
+        String sqlFetchRows = " SELECT id FROM (select id from config_info as tablaA) as tableB LIMIT ?";
+
+        jdbcTemplate.queryForList(sqlFetchRows, 10);
     }
 
     /**

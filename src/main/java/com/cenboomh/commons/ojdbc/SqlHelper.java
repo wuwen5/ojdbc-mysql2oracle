@@ -107,6 +107,10 @@ public class SqlHelper {
                                     needModify.set(true);
                                 }
 
+                                if (tableAliasNotUseAs(plainSelect)) {
+                                    needModify.set(true);
+                                }
+
                                 if (replacePageSql(plainSelect, select::setSelectBody)) {
                                     needModify.set(true);
                                 }
@@ -169,6 +173,42 @@ public class SqlHelper {
     }
 
     /**
+     * FromItemm中存在别名时不使用as
+     * */
+    private static boolean tableAliasNotUseAs(PlainSelect plainSelect) {
+
+        FromItem fromItem = plainSelect.getFromItem();
+
+        //子查询
+        if (fromItem instanceof SubSelect) {
+            SubSelect subSelect = (SubSelect) fromItem;
+
+            SelectBody selectBody = subSelect.getSelectBody();
+
+            boolean update = false;
+
+            if (selectBody instanceof PlainSelect) {
+                update = tableAliasNotUseAs((PlainSelect) selectBody);
+            }
+
+            if (fromItem.getAlias() != null && fromItem.getAlias().isUseAs()) {
+                fromItem.getAlias().setUseAs(false);
+                update = true;
+            }
+
+            return update;
+        } else {
+
+            if (fromItem.getAlias() != null && fromItem.getAlias().isUseAs()) {
+                fromItem.getAlias().setUseAs(false);
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    /**
      * 替换分页语句
      *
      * @param plainSelect   select
@@ -187,12 +227,14 @@ public class SqlHelper {
 
                 newSql = getPageSql(plainSelect.toString(), offset.getValue(), rowCount.getValue() + offset.getValue());
             } else if (limit.getRowCount() instanceof JdbcParameter && limit.getOffset() instanceof JdbcParameter) {
-                //预编译记下参数位置 limit ? , ?
+                //预编译记下分页参数位置 limit ? , ? 用于PreparedStatement#setLong时替换值
                 newSql = getPageSql(plainSelect.toString());
                 JdbcParameter offset = (JdbcParameter) limit.getOffset();
                 JdbcParameter rowCount = (JdbcParameter) limit.getRowCount();
                 LOCAL_LIMIT.set(new Page().setStartRowIndex(offset.getIndex())
                         .setEndRowIndex(rowCount.getIndex()));
+            } else if (limit.getRowCount() instanceof JdbcParameter) {
+                newSql = getPageSqlEndRow(plainSelect.toString());
             } else {
                 log.log(Level.WARNING, "暂不支持的分页语法. [" + limit.toString() + "]");
                 return false;
@@ -231,6 +273,14 @@ public class SqlHelper {
                 sql +
                 " ) TMP_PAGE)" +
                 " WHERE ROW_ID > ? AND ROW_ID <= ?";
+    }
+
+    private static String getPageSqlEndRow(String sql) {
+        return "SELECT * FROM ( " +
+                " SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ( " +
+                sql +
+                " ) TMP_PAGE)" +
+                " WHERE ROW_ID <= ?";
     }
 
     private static String getPageSql(String sql, long startRow, long endRow) {
