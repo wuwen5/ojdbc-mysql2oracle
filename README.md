@@ -10,7 +10,7 @@
 
   
 #### `Java`的启动参数配置  
-  如驱动类无法指定，可通过javaagent配置, 默认替换的mysql驱动为```com.mysql.cj.jdbc.Driver```
+  默认替换的mysql驱动为```com.mysql.cj.jdbc.Driver```
   ```
   java -javaagent:path/to/ojdbc-mysql2oracle-x.y.x.jar
   ```
