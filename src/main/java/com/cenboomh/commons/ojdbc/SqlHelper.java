@@ -18,6 +18,7 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectVisitorAdapter;
 import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.util.TablesNamesFinder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -51,6 +52,7 @@ public class SqlHelper {
 
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?!=[ ]?[?])"), "nvl(TENANT_ID, '!null!') != nvl(?, '!null!')");
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?like[ ]?[?])"), "nvl(TENANT_ID, '!null!') like nvl(?, '!null!')");
+
     }
 
     /**
@@ -94,6 +96,16 @@ public class SqlHelper {
                         .forEach(s -> sb.replace(0, sb.length(), s));
 
                 Statement parse = CCJSqlParserUtil.parse(sb.toString());
+
+                parse.accept(new TablesNamesFinder() {
+                    @Override
+                    public void visit(Table tableName) {
+                        if (tableName.getName() != null && tableName.getName().contains("`")) {
+                            tableName.setName(tableName.getName().replaceAll("`", ""));
+                            needModify.set(true);
+                        }
+                    }
+                });
 
                 parse.accept(new StatementVisitorAdapter() {
                     @Override

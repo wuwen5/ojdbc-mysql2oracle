@@ -67,6 +67,19 @@ public class SqlTest {
     }
 
     @Test
+    void testSymbol() {
+        String sql = " SELECT 1 from `dual`";
+
+        jdbcTemplate.queryForObject(sql, Integer.class);
+
+        sql = " SELECT '`' from `dual`";
+
+        String s = jdbcTemplate.queryForObject(sql, String.class);
+
+        Assertions.assertEquals("`", s);
+    }
+
+    @Test
     void testNormalInsert() {
         jdbcTemplate.update("INSERT INTO config_tags_relation(id,tag_name,tag_type,data_id,group_id,tenant_id) VALUES(?,?,?,?,?,?)",
                 99999, "ut-test-001", 1, "ut-test-001", "group", "namespace");
