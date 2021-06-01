@@ -20,6 +20,7 @@ import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectVisitorAdapter;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.update.Update;
@@ -110,6 +111,19 @@ public class SqlHelper {
                 }
 
                 parse.accept(new TablesNamesFinder() {
+
+                    @Override
+                    public void visit(SelectExpressionItem item) {
+                        super.visit(item);
+
+                        if (item.getAlias() != null) {
+                            if (!item.getAlias().getName().startsWith("\"")
+                                    && !item.getAlias().getName().endsWith("\"")) {
+                                item.getAlias().setName("\"" + item.getAlias().getName() + "\"");
+                                needModify.set(true);
+                            }
+                        }
+                    }
 
                     @Override
                     public void visit(PlainSelect plainSelect) {

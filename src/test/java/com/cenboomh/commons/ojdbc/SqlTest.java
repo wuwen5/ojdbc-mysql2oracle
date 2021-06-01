@@ -311,4 +311,17 @@ public class SqlTest {
         Assertions.assertNull(s);
     }
 
+    /**
+     * select 字段别名增加双引号，避免转map后key为全大写.
+     * */
+    @Test
+    void testAliasWithQuotationMark() {
+        String sql = "select 'aa' app_name from dual";
+
+        Map map = jdbcTemplate.queryForMap(sql);
+
+        Assertions.assertEquals("aa", map.get("app_name"));
+
+    }
+
 }
