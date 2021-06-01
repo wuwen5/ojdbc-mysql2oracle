@@ -15,6 +15,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -313,14 +314,23 @@ public class SqlTest {
 
     /**
      * select 字段别名增加双引号，避免转map后key为全大写.
-     * */
+     */
     @Test
     void testAliasWithQuotationMark() {
         String sql = "select 'aa' app_name from dual";
 
         Map map = jdbcTemplate.queryForMap(sql);
 
-        Assertions.assertEquals("aa", map.get("app_name"));
+        System.out.println(map);
+        //spring 默认返回的result map是LinkedCaseInsensitiveMap，忽略大小写, 而mybatis中是区分大小写.
+
+        Map matchCase = new HashMap<>(map);
+        Assertions.assertEquals("aa", matchCase.get("app_name"));
+
+        sql = "select (select 'aa' app_name from dual) a from dual";
+
+        jdbcTemplate.queryForMap(sql);
+
 
     }
 

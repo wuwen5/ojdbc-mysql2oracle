@@ -8,6 +8,7 @@ import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.JdbcParameter;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.NotExpression;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -116,7 +117,7 @@ public class SqlHelper {
                     public void visit(SelectExpressionItem item) {
                         super.visit(item);
 
-                        if (item.getAlias() != null) {
+                        if (item.getAlias() != null && item.getExpression() instanceof StringValue) {
                             if (!item.getAlias().getName().startsWith("\"")
                                     && !item.getAlias().getName().endsWith("\"")) {
                                 item.getAlias().setName("\"" + item.getAlias().getName() + "\"");
