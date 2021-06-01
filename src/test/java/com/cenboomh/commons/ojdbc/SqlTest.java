@@ -295,14 +295,14 @@ public class SqlTest {
     @Test
     void testUpdateSetNull() {
 
-        final String insert = "INSERT INTO config_info(data_id,tenant_id,content, app_name,ext1) " +
-                "VALUES('test-dataId-9999','','xxxx', 'appName',1)";
+        final String insert = "INSERT INTO config_info(data_id,tenant_id,content, app_name) " +
+                "VALUES('test-dataId-9999','','xxxx', 'appName')";
 
         jdbcTemplate.update(insert);
 
-        String sql = "update config_info set app_name=?,ext1=? where data_id='test-dataId-9999'";
+        String sql = "update config_info set app_name=? where data_id='test-dataId-9999'";
 
-        jdbcTemplate.update(sql, new Object[]{null, null});
+        jdbcTemplate.update(sql, new Object[]{null});
 
 
         String s = jdbcTemplate.queryForObject("select app_name from config_info where data_id='test-dataId-9999'",
