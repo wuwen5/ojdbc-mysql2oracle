@@ -134,6 +134,10 @@ public class SqlTest {
         //limit 单参数
         sqlFetchRows = " SELECT id FROM config_info as tablaA LIMIT ?";
         jdbcTemplate.queryForList(sqlFetchRows, 10);
+
+        //limit 1
+        sqlFetchRows = " SELECT id FROM config_info as tablaA LIMIT 1";
+        jdbcTemplate.queryForList(sqlFetchRows);
     }
 
     /**
@@ -283,6 +287,25 @@ public class SqlTest {
 
         jdbcTemplate.queryForList(sql, Integer.class, Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)),
                 1, Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)));
+    }
+
+    @Test
+    void testUpdateSetNull() {
+
+        final String insert = "INSERT INTO config_info(data_id,tenant_id,content, app_name,ext1) " +
+                "VALUES('test-dataId-9999','','xxxx', 'appName',1)";
+
+        jdbcTemplate.update(insert);
+
+        String sql = "update config_info set app_name=?,ext1=? where data_id='test-dataId-9999'";
+
+        jdbcTemplate.update(sql, new Object[]{null, null});
+
+
+        String s = jdbcTemplate.queryForObject("select app_name from config_info where data_id='test-dataId-9999'",
+                String.class);
+
+        Assertions.assertNull(s);
     }
 
 }

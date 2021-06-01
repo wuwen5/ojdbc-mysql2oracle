@@ -286,8 +286,11 @@ public class SqlHelper {
                         .setEndRowIndex(rowCount.getIndex()));
             } else if (limit.getRowCount() instanceof JdbcParameter) {
                 newSql = getPageSqlEndRow(plainSelect.toString());
+            } else if (limit.getRowCount() instanceof LongValue) {
+                newSql = getPageSqlEndRow(plainSelect.toString(), ((LongValue) limit.getRowCount()).getValue());
             } else {
-                log.log(Level.WARNING, "暂不支持的分页语法. [" + limit.toString() + "]");
+                plainSelect.setLimit(limit);
+                log.log(Level.WARNING, "暂不支持的分页语法. [" + plainSelect.toString() + "]");
                 return false;
             }
 
@@ -319,22 +322,31 @@ public class SqlHelper {
     }
 
     private static String getPageSql(String sql) {
-        return "SELECT * FROM ( " +
-                " SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ( " +
-                sql +
-                " ) TMP_PAGE)" +
-                " WHERE ROW_ID > ? AND ROW_ID <= ?";
+        return getPageSql0(sql, "?", "?");
     }
 
     private static String getPageSqlEndRow(String sql) {
+        return getPageSqlEndRow0(sql, "?");
+    }
+
+    private static String getPageSqlEndRow(String sql, long endRow) {
+        return getPageSqlEndRow0(sql, endRow);
+    }
+
+
+    private static String getPageSql(String sql, long startRow, long endRow) {
+        return getPageSql0(sql, startRow, endRow);
+    }
+
+    private static String getPageSqlEndRow0(String sql, Object endRow) {
         return "SELECT * FROM ( " +
                 " SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ( " +
                 sql +
                 " ) TMP_PAGE)" +
-                " WHERE ROW_ID <= ?";
+                " WHERE ROW_ID <= " + endRow;
     }
 
-    private static String getPageSql(String sql, long startRow, long endRow) {
+    private static String getPageSql0(String sql, Object startRow, Object endRow) {
         return "SELECT * FROM ( " +
                 " SELECT TMP_PAGE.*, ROWNUM ROW_ID FROM ( " +
                 sql +

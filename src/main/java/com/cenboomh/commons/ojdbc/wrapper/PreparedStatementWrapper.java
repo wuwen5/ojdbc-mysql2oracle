@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -421,7 +422,7 @@ public class PreparedStatementWrapper extends StatementWrapper implements Prepar
 
     @Override
     public void setNull(int parameterIndex, int sqlType) throws SQLException {
-        delegate.setNull(parameterIndex, sqlType);
+        delegate.setNull(parameterIndex, sqlType == Types.OTHER ? Types.NULL : sqlType);
     }
 
     @Override
