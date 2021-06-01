@@ -247,8 +247,8 @@ public class SqlHelper {
         }
 
         if (needModify.get()) {
-            if (log.isLoggable(Level.INFO)) {
-                log.log(Level.INFO, String.format("源sql:%s, 转换后:%s", sql, newSql));
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.FINE, String.format("源sql:%s, 转换后:%s", sql, newSql));
             }
         }
         return newSql;
