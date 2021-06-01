@@ -105,6 +105,10 @@ public class SqlHelper {
 
                 Statement parse = CCJSqlParserUtil.parse(sb.toString());
 
+                if (sql.trim().endsWith(";")) {
+                    needModify.set(true);
+                }
+
                 parse.accept(new TablesNamesFinder() {
 
                     @Override

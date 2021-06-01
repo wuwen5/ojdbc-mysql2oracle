@@ -41,6 +41,9 @@ public class SqlTest {
         result = jdbcTemplate.queryForObject(sql, Integer.class);
 
         Assertions.assertEquals(1, result);
+
+        sql = " SELECT 1 from dual;";
+        jdbcTemplate.queryForObject(sql, Integer.class);
     }
 
     @Test
