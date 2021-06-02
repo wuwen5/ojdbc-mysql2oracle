@@ -117,7 +117,10 @@ public class SqlHelper {
                     public void visit(SelectExpressionItem item) {
                         super.visit(item);
 
-                        if (item.getAlias() != null && item.getExpression() instanceof StringValue) {
+                        if (item.getAlias() != null &&
+                                (item.getExpression() instanceof StringValue
+                                        || item.getExpression() instanceof Column
+                                        || item.getExpression() instanceof Function)) {
                             if (!item.getAlias().getName().startsWith("\"")
                                     && !item.getAlias().getName().endsWith("\"")) {
                                 item.getAlias().setName("\"" + item.getAlias().getName() + "\"");

@@ -329,8 +329,21 @@ public class SqlTest {
 
         sql = "select (select 'aa' app_name from dual) a from dual";
 
+        map = jdbcTemplate.queryForMap(sql);
+
+        matchCase = new HashMap<>(map);
+        Assertions.assertEquals("aa", matchCase.get("A"));
+
+        sql = "select dummy app_name from dual";
+
+        map = jdbcTemplate.queryForMap(sql);
+
+        sql = "select count(dummy) app_name from dual";
+
         jdbcTemplate.queryForMap(sql);
 
+        matchCase = new HashMap<>(map);
+        Assertions.assertEquals("X", matchCase.get("app_name"));
 
     }
 
