@@ -26,7 +26,20 @@
   - 推荐将包放入nacos-server.jar同级目录
   - 修改start.sh 
   
-    ``` JAVA_OPT="${JAVA_OPT} -javaagent:${BASE_DIR}/target/ojdbc-mysql2oracle-1.0.0-SNAPSHOT.jar -jar ${BASE_DIR}/target/${SERVER}.jar" ```
+    ```bash 
+    JAVA_OPT="${JAVA_OPT} -javaagent:${BASE_DIR}/target/ojdbc-mysql2oracle-1.0.0-SNAPSHOT.jar -jar ${BASE_DIR}/target/${SERVER}.jar" 
+    ```
+    
+  - 修改 nacos/conf/application.properties, 配置oracle连接信息
+     ```properties
+     ### Count of DB:
+     db.num=1
+
+     ### Connect URL of DB:
+     db.url.0=jdbc:oracle:thin:@ip:port:orcl
+     db.user.0=nacos
+     db.password.0=nacos
+     ```
 
 #### 支持的语法
 - ```select 1``` mysql中不带```from```的查询
