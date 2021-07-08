@@ -24,10 +24,17 @@
   
   Nacos中使用
   - 推荐将包放入nacos-server.jar同级目录
-  - 修改start.sh 
+  - Linux 修改start.sh 
   
     ```bash 
+    #将JAVA_OPT="${JAVA_OPT} -jar ${BASE_DIR}/target/${SERVER}.jar" 改为
     JAVA_OPT="${JAVA_OPT} -javaagent:${BASE_DIR}/target/ojdbc-mysql2oracle-1.0.0-SNAPSHOT.jar -jar ${BASE_DIR}/target/${SERVER}.jar" 
+    ```
+  - Windows 修改start.bat
+    
+    ```cmd
+    rem 将 set "NACOS_OPTS=%NACOS_OPTS% -jar %BASE_DIR%\target\%SERVER%.jar" 改为
+    set "NACOS_OPTS=%NACOS_OPTS% -javaagent:%BASE_DIR%\target\ojdbc-mysql2oracle-1.0.0-SNAPSHOT.jar -jar %BASE_DIR%\target\%SERVER%.jar"
     ```
     
   - 修改 nacos/conf/application.properties, 配置oracle连接信息
