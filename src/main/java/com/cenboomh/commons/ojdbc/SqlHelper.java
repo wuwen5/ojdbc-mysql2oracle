@@ -28,6 +28,7 @@ import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.util.TablesNamesFinder;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,7 +48,7 @@ public class SqlHelper {
 
     private static Map<String, String> mapping = new HashMap<>();
 
-    private static Map<Pattern, String> sqlReplace = new HashMap<>();
+    private static Map<Pattern, String> sqlReplace = new LinkedHashMap<>();
 
     private static final ThreadLocal<Page> LOCAL_LIMIT = new ThreadLocal<>();
 
@@ -56,8 +57,9 @@ public class SqlHelper {
 
         //TODO 配置特殊替换规则,放到配置文件中 (nacos 空值eq操作, TENANT_ID = ?)
         String reg = "((?i)TENANT_ID[ ]?[=][ ]?[?])";
+        sqlReplace.put(Pattern.compile("((?i)a.TENANT_ID[ ]?[=][ ]?[?])"), "nvl(a.TENANT_ID, '!null!') = nvl(?, '!null!')");
         sqlReplace.put(Pattern.compile(reg), "nvl(TENANT_ID, '!null!') = nvl(?, '!null!')");
-
+        
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?!=[ ]?[?])"), "nvl(TENANT_ID, '!null!') != nvl(?, '!null!')");
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?like[ ]?[?])"), "nvl(TENANT_ID, '!null!') like nvl(?, '!null!')");
 
