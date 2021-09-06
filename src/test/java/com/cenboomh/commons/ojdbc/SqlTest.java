@@ -346,15 +346,19 @@ public class SqlTest {
         Assertions.assertEquals("X", matchCase.get("app_name"));
 
     }
-    
+
     /**
      * 带标签条件的查询语句
-     * */
+     */
     @Test
     void fixNacosTenantIdWithAlias() {
         String sql = "select count(*) from config_info  a left join config_tags_relation b on a.id=b.id where  a.tenant_id=?  and b.tag_name in (?)";
 
         jdbcTemplate.queryForMap(sql, "dev", "bff");
+
+        sql = "select count(*) from config_info  a left join config_tags_relation b on a.id=b.id  where  a.tenant_id like ?  and a.data_id like ?  and b.tag_name in (?) ";
+
+        jdbcTemplate.queryForMap(sql, "dev", "*bff*", "bff");
     }
 
 }

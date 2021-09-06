@@ -61,6 +61,8 @@ public class SqlHelper {
         sqlReplace.put(Pattern.compile(reg), "nvl(TENANT_ID, '!null!') = nvl(?, '!null!')");
         
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?!=[ ]?[?])"), "nvl(TENANT_ID, '!null!') != nvl(?, '!null!')");
+
+        sqlReplace.put(Pattern.compile("((?i)a.TENANT_ID[ ]?like[ ]?[?])"), "nvl(a.TENANT_ID, '!null!') like nvl(?, '!null!')");
         sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?like[ ]?[?])"), "nvl(TENANT_ID, '!null!') like nvl(?, '!null!')");
 
         //初始化函数处理
