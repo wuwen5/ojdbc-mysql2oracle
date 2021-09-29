@@ -3,12 +3,11 @@ package com.cenboomh.commons.ojdbc;
 import com.cenboomh.commons.ojdbc.function.BaseFunction;
 import com.cenboomh.commons.ojdbc.function.DateAddFunction;
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.Function;
-import net.sf.jsqlparser.expression.JdbcParameter;
-import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.NotExpression;
-import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.*;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
+import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -16,28 +15,18 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.StatementVisitorAdapter;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.insert.Insert;
-import net.sf.jsqlparser.statement.select.FromItem;
-import net.sf.jsqlparser.statement.select.Limit;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectBody;
-import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import net.sf.jsqlparser.statement.select.SelectVisitorAdapter;
-import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.statement.select.*;
 import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.util.TablesNamesFinder;
 
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author wuwen
@@ -48,22 +37,10 @@ public class SqlHelper {
 
     private static Map<String, String> mapping = new HashMap<>();
 
-    private static Map<Pattern, String> sqlReplace = new LinkedHashMap<>();
-
     private static final ThreadLocal<Page> LOCAL_LIMIT = new ThreadLocal<>();
 
     static {
         mapping.put("SELECT @@READ_ONLY", "SELECT 0 FROM DUAL");
-
-        //TODO 配置特殊替换规则,放到配置文件中 (nacos 空值eq操作, TENANT_ID = ?)
-        String reg = "((?i)TENANT_ID[ ]?[=][ ]?[?])";
-        sqlReplace.put(Pattern.compile("((?i)a.TENANT_ID[ ]?[=][ ]?[?])"), "nvl(a.TENANT_ID, '!null!') = nvl(?, '!null!')");
-        sqlReplace.put(Pattern.compile(reg), "nvl(TENANT_ID, '!null!') = nvl(?, '!null!')");
-        
-        sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?!=[ ]?[?])"), "nvl(TENANT_ID, '!null!') != nvl(?, '!null!')");
-
-        sqlReplace.put(Pattern.compile("((?i)a.TENANT_ID[ ]?like[ ]?[?])"), "nvl(a.TENANT_ID, '!null!') like nvl(?, '!null!')");
-        sqlReplace.put(Pattern.compile("((?i)TENANT_ID[ ]?like[ ]?[?])"), "nvl(TENANT_ID, '!null!') like nvl(?, '!null!')");
 
         //初始化函数处理
         DateAddFunction.init();
@@ -95,28 +72,29 @@ public class SqlHelper {
 
         try {
             String sqlUp = sql.trim().toUpperCase();
+            //固定的SQL写法
             if (mapping.containsKey(sqlUp)) {
                 newSql = mapping.get(sqlUp);
                 needModify.set(true);
             } else {
-
-                StringBuilder sb = new StringBuilder(sql);
-
-                sqlReplace.entrySet().stream()
-                        .map(e -> matcherReplace(e, sb.toString()))
-                        .filter(Optional::isPresent)
-                        .peek(s -> needModify.set(true))
-                        .map(Optional::get)
-                        .forEach(s -> sb.replace(0, sb.length(), s));
-
-                Statement parse = CCJSqlParserUtil.parse(sb.toString());
-
+                Statement parse = CCJSqlParserUtil.parse(sql);
                 if (sql.trim().endsWith(";")) {
                     needModify.set(true);
                 }
 
                 parse.accept(new TablesNamesFinder() {
-
+                    public void visit(LikeExpression likeExpression){
+                        tenantIdNullHandler(likeExpression, needModify);
+                        super.visit(likeExpression);
+                    }
+                    public void visit(EqualsTo equalsTo){
+                        tenantIdNullHandler(equalsTo, needModify);
+                        super.visit(equalsTo);
+                    }
+                    public void visit(NotEqualsTo notEqualsTo){
+                        tenantIdNullHandler(notEqualsTo, needModify);
+                        super.visit(notEqualsTo);
+                    }
                     @Override
                     public void visit(SelectExpressionItem item) {
                         super.visit(item);
@@ -187,7 +165,7 @@ public class SqlHelper {
                     @Override
                     public void visit(Update update) {
                         super.visit(update);
-                        columnsProcess(update.getColumns());
+                        columnsProcess(update.getUpdateSets().get(0).getColumns());
                     }
 
                     @Override
@@ -202,6 +180,7 @@ public class SqlHelper {
                     @Override
                     public void visit(Function function) {
                         super.visit(function);
+                        //对函数进行替换处理
                         if (BaseFunction.process(function)) {
                             needModify.set(true);
                         }
@@ -276,13 +255,35 @@ public class SqlHelper {
         return newSql;
     }
 
-    private static Optional<String> matcherReplace(Map.Entry<Pattern, String> entry, String sql) {
-        Matcher matcher = entry.getKey().matcher(sql);
-        if (matcher.find()) {
-            String s = matcher.replaceAll(entry.getValue());
-            return Optional.of(s);
+    /**
+     * 这里主要是针对TENANT_ID的处理，mysql的''在Oracle中为null，所以要做一些特殊处理
+     * @param expression
+     * @param needModify
+     */
+    private static void tenantIdNullHandler(BinaryExpression expression, final AtomicBoolean needModify) {
+        Expression leftExpression = expression.getLeftExpression();
+        if(leftExpression instanceof Column){
+            Column col = (Column) leftExpression;
+            if(col.getColumnName().equalsIgnoreCase("tenant_id")){
+                Function func = new Function();
+                func.setName(Arrays.asList("nvl"));
+                ExpressionList list = new ExpressionList();
+                list.addExpressions(col);
+                list.addExpressions(new StringValue("!null!"));
+                func.setParameters(list);
+                expression.setLeftExpression(func);
+
+                Expression rightExpression = expression.getRightExpression();
+                func = new Function();
+                func.setName(Arrays.asList("nvl"));
+                list = new ExpressionList();
+                list.addExpressions(rightExpression);
+                list.addExpressions(new StringValue("!null!"));
+                func.setParameters(list);
+                expression.setRightExpression(func);
+                needModify.set(true);
+            }
         }
-        return Optional.empty();
     }
 
     /**
