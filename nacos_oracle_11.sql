@@ -157,100 +157,90 @@ INSERT INTO "ROLES" ( "USERNAME", "ROLE" ) VALUES   ( 'nacos', 'ROLE_ADMIN' );
 create sequence seq_config_info;
 create or replace trigger tg_config_info
 --before:执行DML等操作之前触发
-before insert on config_info  
+before insert on config_info
 --行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_config_info.nextval into :new.id from dual;
 end;
 /
 create sequence seq_config_tags_relation;
 create or replace trigger tg_config_tags_relation
 --before:执行DML等操作之前触发
-before insert on config_tags_relation  
+before insert on config_tags_relation
 --行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_config_tags_relation.nextval into :new.nid from dual;
 end;
 /
 create sequence seq_config_info_aggr;
 create or replace trigger tg_config_info_aggr
 --before:
-before insert on config_info_aggr  
+before insert on config_info_aggr
 --行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_config_info_aggr.nextval into :new.id from dual;
 end;
 /
 create sequence seq_config_info_beta;
 create or replace trigger tg_config_info_beta
 --before:
-before insert on config_info_beta  
+before insert on config_info_beta
 --行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_config_info_beta.nextval into :new.id from dual;
 end;
 /
 create sequence seq_config_info_tag;
 create or replace trigger tg_config_info_tag
 --before:
-before insert on config_info_tag  
+before insert on config_info_tag
 --行级触发器
-for each row  
-begin 
-    select seq_config_info_tag.nextval into :new.id from dual;
-end;
-/
-create sequence seq_config_info_tag;
-create or replace trigger tg_config_info_tag
---before:
-before insert on config_info_tag  
---行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_config_info_tag.nextval into :new.id from dual;
 end;
 /
 create sequence seq_group_capacity;
 create or replace trigger tg_group_capacity
 --before:
-before insert on group_capacity  
+before insert on group_capacity
 --行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_group_capacity.nextval into :new.id from dual;
 end;
 /
 create sequence seq_his_config_info;
 create or replace trigger tg_his_config_info
 --before:
-before insert on his_config_info  
+before insert on his_config_info
 --行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_his_config_info.nextval into :new.nid from dual;
 end;
 /
 create sequence seq_tenant_capacity;
 create or replace trigger tg_tenant_capacity
 --before:
-before insert on tenant_capacity  
+before insert on tenant_capacity
 --行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_tenant_capacity.nextval into :new.id from dual;
 end;
 /
 create sequence seq_tenant_info;
 create or replace trigger tg_tenant_info
 --before:
-before insert on tenant_info  
+before insert on tenant_info
 --行级触发器
-for each row  
-begin 
+for each row
+begin
     select seq_tenant_info.nextval into :new.id from dual;
 end;
 /
