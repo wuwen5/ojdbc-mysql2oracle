@@ -25,6 +25,7 @@ import java.util.Map;
 @SpringBootTest
 @Rollback
 @Transactional
+@EnabledIfDbAvailable
 public class SqlTest {
 
     @Autowired

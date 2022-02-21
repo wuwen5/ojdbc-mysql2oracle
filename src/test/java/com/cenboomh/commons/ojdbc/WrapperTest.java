@@ -18,6 +18,7 @@ import java.sql.Statement;
 @SpringBootTest
 @Rollback
 @Transactional
+@EnabledIfDbAvailable
 public class WrapperTest {
     
     @Autowired
