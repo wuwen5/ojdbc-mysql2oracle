@@ -51,6 +51,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.oracle.database.nls</groupId>
+            <artifactId>orai18n</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.github.jsqlparser</groupId>
             <artifactId>jsqlparser</artifactId>
             <version>4.2</version>
@@ -157,6 +162,7 @@
                                     <include>org.javassist:javassist</include>
                                     <include>com.github.jsqlparser:jsqlparser</include>
                                     <include>com.oracle.database.jdbc:ojdbc8</include>
+                                    <include>com.oracle.database.nls:orai18n</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
