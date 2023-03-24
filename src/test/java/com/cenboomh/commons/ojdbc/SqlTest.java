@@ -362,4 +362,18 @@ public class SqlTest {
         jdbcTemplate.queryForMap(sql, "dev", "*bff*", "bff");
     }
 
+    @Test
+    void fixKeyWords() {
+        String sql = "INSERT INTO permissions (role, resource, action) VALUES (?, ?, ?)";
+
+        jdbcTemplate.update(sql, "role", "/xxx", "xxx");
+        
+        sql = "SELECT role,resource,action FROM permissions WHERE role = ?";
+
+        jdbcTemplate.queryForMap(sql, "role");
+
+        sql = "DELETE FROM permissions WHERE role=? AND resource=? AND action=?";
+        jdbcTemplate.update(sql, "role", "/xxx", "xxx");
+    }
+
 }

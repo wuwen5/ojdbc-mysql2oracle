@@ -32,12 +32,14 @@ import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.util.TablesNamesFinder;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,6 +53,21 @@ public class SqlHelper {
     private static Map<String, String> mapping = new HashMap<>();
 
     private static final ThreadLocal<Page> LOCAL_LIMIT = new ThreadLocal<>();
+    
+    private static final String[] KEY_WORDS = {"resource"};
+
+    private static final Predicate<Column> COLUMN_KEYWORD_PREDICATE = column -> 
+            Arrays.stream(KEY_WORDS).anyMatch(i -> i.equalsIgnoreCase(column.getColumnName()));
+    
+    private static final Predicate<Column> COLUMN_PREDICATE = column -> column.getColumnName().contains("`")
+            || COLUMN_KEYWORD_PREDICATE.test(column);
+    
+    private static final Consumer<Column> COLUMN_UPDATE = column -> {
+        column.setColumnName(column.getColumnName().replaceAll("`", ""));
+        if (COLUMN_KEYWORD_PREDICATE.test(column)) {
+            column.setColumnName("\"" + column.getColumnName().toUpperCase() + "\"");
+        }
+    };
 
     static {
         mapping.put("SELECT @@READ_ONLY", "SELECT 0 FROM DUAL");
@@ -169,8 +186,8 @@ public class SqlHelper {
 
                     @Override
                     public void visit(Column tableColumn) {
-                        if (tableColumn.getColumnName().contains("`")) {
-                            tableColumn.setColumnName(tableColumn.getColumnName().replaceAll("`", ""));
+                        if (COLUMN_PREDICATE.test(tableColumn)) {
+                            COLUMN_UPDATE.accept(tableColumn);
                             needModify.set(true);
                         }
                     }
@@ -208,9 +225,9 @@ public class SqlHelper {
 
                     private void columnsProcess(List<Column> columns) {
                         columns.stream()
-                                .filter(c -> c.getColumnName().contains("`"))
+                                .filter(COLUMN_PREDICATE)
                                 .peek(c -> needModify.set(true))
-                                .forEach(c -> c.setColumnName(c.getColumnName().replaceAll("`", "")));
+                                .forEach(COLUMN_UPDATE);
                     }
                 });
 
