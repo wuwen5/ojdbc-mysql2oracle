@@ -1,28 +1,22 @@
-## mysql to oracle
+## Mysql to Oracle
 
-目前主要为适应nacos部署在oracle而开发
+项目初期主要为适应Nacos在Oracle数据库上的部署而开发，采用驱动层代理来拦截SQL，并实时进行SQL语法转换， 可考虑在此基础上扩展支持其他数据库的语法转换。
 
-# 功能
+## 功能
   mysql到oracle语法转换, 支持部分mysql语法转换.
-  在 nacos-1.4.x 中已测试.
+  在 nacos-1.4.x、nacos-2.x、xxl-job 中已测试.
   
-#### 驱动类配置
+### nacos-2.2.x ~ 版本配置方式(nacos-2.2以上版本)  
 
-  
-#### `Java`的启动参数配置  
-  默认替换的mysql驱动为```com.mysql.cj.jdbc.Driver```
+- 本项目本地打包后，将`ojdbc-mysql2oracle-x.y.x.jar`放入`nacos-server/plugins`目录
+- 增加`conf/application.properties`以下配置 (db.url.0配置正确oracle jdbcUrl)
   ```
-  java -javaagent:path/to/ojdbc-mysql2oracle-x.y.x.jar
-  ```
-  
-  指定驱动类
-  ```
-  java -javaagent:path/to/ojdbc-mysql2oracle-x.y.x.jar=driverClassName:com.mysql.jdbc.Driver
-  ```
+  db.pool.config.driverClassName=com.cenboomh.commons.ojdbc.driver.MysqlToOracleDriver
+  spring.datasource.platform=mysql
+  ``` 
 
-----
-  
-  Nacos中使用
+### nacos-1.4.x ~ Nacos-2.1 版本配置方式(nacos-2.2以下版本)  
+  因nacos-1.4.x无法直接配置驱动类，所以需通过javaagent方式加载
   - 推荐将包放入nacos-server.jar同级目录
   - Linux 修改start.sh 
   
@@ -48,7 +42,21 @@
      db.password.0=nacos
      ```
 
-#### 支持的语法
+## agent方式替换驱动的相关配置
+
+  对于不支持驱动类配置的项目可通过`agent`方式替换驱动
+
+  - 默认替换的mysql驱动为```com.mysql.cj.jdbc.Driver```
+  ```
+  java -javaagent:path/to/ojdbc-mysql2oracle-x.y.x.jar
+  ```
+  
+  - 指定驱动类
+  ```
+  java -javaagent:path/to/ojdbc-mysql2oracle-x.y.x.jar=driverClassName:com.mysql.jdbc.Driver
+  ```
+
+## 支持的语法
 - ```select 1``` mysql中不带```from```的查询
 - ```insert into ... returning  primarykey```  新增数据返回主键
  <br> 例如: ```JdbcTemplate```中的```int update(PreparedStatementCreator psc, KeyHolder generatedKeyHolder)```
