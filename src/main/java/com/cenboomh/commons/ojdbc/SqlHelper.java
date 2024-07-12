@@ -42,6 +42,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * @author wuwen
@@ -202,7 +203,9 @@ public class SqlHelper {
                     @Override
                     public void visit(Update update) {
                         super.visit(update);
-                        columnsProcess(update.getUpdateSets().get(0).getColumns());
+                        columnsProcess(update.getUpdateSets().stream()
+                                .flatMap(i -> i.getColumns().stream())
+                                .collect(Collectors.toList()));
                     }
 
                     @Override

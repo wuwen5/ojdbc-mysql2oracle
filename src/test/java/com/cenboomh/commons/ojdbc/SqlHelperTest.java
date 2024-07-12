@@ -63,6 +63,14 @@ class SqlHelperTest {
             assertEquals(test[1].toUpperCase(), SqlHelper.mysql2oracle(test[0]).toUpperCase());
         }
     }
+    
+    @Test
+    void issueUpdateBackquote() {
+        String sql = "UPDATE xxl_job_log_report         SET `running_count` = ?,          `suc_count` = ?,          `fail_count` = ?         WHERE `trigger_day` = ?";
+        String expeSql = "UPDATE XXL_JOB_LOG_REPORT SET RUNNING_COUNT = ?, SUC_COUNT = ?, FAIL_COUNT = ? WHERE TRIGGER_DAY = ?";
+        
+        assertEquals(expeSql, SqlHelper.mysql2oracle(sql).toUpperCase());
+    }
 
 
     
